@@ -49,6 +49,17 @@
     const openingAreaSqFt = parsed.openings.reduce((sum, item) => sum + item.lengthFt * item.heightFt, 0);
     if (openingAreaSqFt > grossAreaSqFt) throw new Error("Opening area exceeds total wall area. Recheck entries.");
 
+    // Area alone is insufficient: a single opening must fit a physical wall.
+    // Openings are not assigned to walls in the current description syntax.
+    parsed.openings.forEach(function (opening, index) {
+      const fitsSomeWall = parsed.walls.some(function (wall) {
+        return opening.lengthFt <= wall.lengthFt && opening.heightFt <= wall.heightFt;
+      });
+      if (!fitsSomeWall) {
+        throw new Error("Opening " + (index + 1) + " does not fit any listed wall dimensions.");
+      }
+    });
+
     const netAreaSqFt = grossAreaSqFt - openingAreaSqFt;
     const fullHeightPositions = parsed.walls.reduce((sum, wall) => sum + Math.ceil(wall.lengthFt * 12 / spacingIn) + 1, 0);
     const supplementaryStuds = parsed.openings.length * 2;

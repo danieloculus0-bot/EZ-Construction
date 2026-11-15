@@ -60,6 +60,36 @@
       }
     });
 
+    // Allocate every opening to one physical wall. Each opening consumes its
+    // full width; overlapping or stacked openings are not inferred from area.
+    // Backtracking avoids rejecting layouts where greedy first-fit fails.
+    const remainingWidths = parsed.walls.map(function (wall) { return wall.lengthFt; });
+    const assignment = new Array(parsed.openings.length);
+    const ordered = parsed.openings.map(function (opening, index) {
+      return { opening: opening, index: index };
+    }).sort(function (a, b) { return b.opening.lengthFt - a.opening.lengthFt; });
+    function allocate(position) {
+      if (position === ordered.length) return true;
+      const item = ordered[position];
+      const tried = new Set();
+      for (let wallIndex = 0; wallIndex < parsed.walls.length; wallIndex++) {
+        const wall = parsed.walls[wallIndex];
+        const available = remainingWidths[wallIndex];
+        if (wall.heightFt < item.opening.heightFt || available + 1e-9 < item.opening.lengthFt) continue;
+        const signature = wall.heightFt + ":" + available;
+        if (tried.has(signature)) continue;
+        tried.add(signature);
+        remainingWidths[wallIndex] -= item.opening.lengthFt;
+        assignment[item.index] = wallIndex + 1;
+        if (allocate(position + 1)) return true;
+        remainingWidths[wallIndex] += item.opening.lengthFt;
+      }
+      return false;
+    }
+    if (!allocate(0)) {
+      throw new Error("Openings cannot be allocated to wall widths without overlap; split or revise the layout.");
+    }
+
     const netAreaSqFt = grossAreaSqFt - openingAreaSqFt;
     const fullHeightPositions = parsed.walls.reduce((sum, wall) => sum + Math.ceil(wall.lengthFt * 12 / spacingIn) + 1, 0);
     const supplementaryStuds = parsed.openings.length * 2;
@@ -73,6 +103,7 @@
     return {
       wallCount: parsed.walls.length,
       openingCount: parsed.openings.length,
+      openingWallNumbers: assignment,
       grossAreaSqFt: grossAreaSqFt,
       openingAreaSqFt: openingAreaSqFt,
       netAreaSqFt: netAreaSqFt,
@@ -89,6 +120,7 @@
       options: {spacingIn, wastePercent, pricePerStud, pricePerSheet, hoursPerSqFt, hourlyRate},
       parsed: parsed,
       assumptions: [
+        "Openings are allocated to wall widths without overlap; exact positions and vertical stacking are not modeled.",
         "Area-only material estimate; sheathing cut placement and usable offcuts are not modeled.",
         "Two supplementary framing studs per opening are a rough allowance, not an engineered opening assembly.",
         "Headers, trimmers, cripple studs, fasteners, connectors, corners and wall intersections are not calculated.",

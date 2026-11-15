@@ -40,4 +40,11 @@ assert.throws(()=>calculate("wall 10 x 8\nopening 6 x 4\nopening 6 x 4",options)
 const allocated=calculate("wall 10 x 8\nwall 6 x 8\nopening 6 x 7\nopening 7 x 4\nopening 3 x 3",options);
 assert.deepEqual(allocated.openingWallNumbers,[2,1,1]);
 assert.throws(()=>calculate("wall 10 x 8\nwall 10 x 4\nopening 7 x 7\nopening 7 x 7",options),/cannot be allocated/);
+// Explicit opening-to-wall assignment must override automatic allocation.
+const pinned=calculate("wall 10 x 8\nwall 12 x 8\nopening 4 x 7 @2\nopening 3 x 3 @1",options);
+assert.deepEqual(pinned.openingWallNumbers,[2,1]);
+assert.equal(pinned.openingAreaSqFt,37);
+assert.throws(()=>calculate("wall 10 x 8\nopening 3 x 7 @2",options),/does not fit any listed wall/);
+assert.throws(()=>calculate("wall 10 x 8\nwall 10 x 8\nopening 7 x 7 @1\nopening 7 x 7 @1",options),/cannot be allocated/);
+assert.throws(()=>parseDescription("wall 10 x 8 @1"),/wall entries cannot/);
 console.log("EZ Construction estimator: all deterministic assertions passed");

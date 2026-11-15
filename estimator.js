@@ -21,13 +21,13 @@
     description.split(/\r?\n/).forEach(function (line, index) {
       const source = line.trim();
       if (!source || source.startsWith("#")) return;
-      const match = /^(wall|opening)\s+(\d+(?:\.\d+)?)\s*(?:ft|feet|')?\s*[x×]\s*(\d+(?:\.\d+)?)\s*(?:ft|feet|')?\s*$/i.exec(source);
+      const match = /^(wall|opening)\s+(\d+(?:\.\d+)?)\s*(?:ft|feet|')?\s*[x×]\s*(\d+(?:\.\d+)?)\s*(?:ft|feet|')?\s*(?:@([1-9]\d*))?\s*$/i.exec(source);
       if (!match) {
         throw new Error("Line " + (index + 1) + ": use 'wall 20 x 8' or 'opening 3 x 7' (feet).");
       }
       const length = positive(match[2], "Line " + (index + 1) + " width");
       const height = positive(match[3], "Line " + (index + 1) + " height");
-      (match[1].toLowerCase() === "wall" ? walls : openings).push({ lengthFt: length, heightFt: height });
+      if (match[1].toLowerCase() === "wall") {\n        if (match[4]) throw new Error("Line " + (index + 1) + ": wall entries cannot have an opening assignment.");\n        walls.push({ lengthFt: length, heightFt: height });\n      } else {\n        openings.push({ lengthFt: length, heightFt: height, wallNumber: match[4] ? Number(match[4]) : null });\n      }
     });
     if (!walls.length) throw new Error("Add at least one wall, such as 'wall 20 x 8'.");
     return { walls: walls, openings: openings };
@@ -53,7 +53,7 @@
     // Openings are not assigned to walls in the current description syntax.
     parsed.openings.forEach(function (opening, index) {
       const fitsSomeWall = parsed.walls.some(function (wall) {
-        return opening.lengthFt <= wall.lengthFt && opening.heightFt <= wall.heightFt;
+        return (opening.wallNumber === null || opening.wallNumber === parsed.walls.indexOf(wall) + 1) && opening.lengthFt <= wall.lengthFt && opening.heightFt <= wall.heightFt;
       });
       if (!fitsSomeWall) {
         throw new Error("Opening " + (index + 1) + " does not fit any listed wall dimensions.");
@@ -75,7 +75,7 @@
       for (let wallIndex = 0; wallIndex < parsed.walls.length; wallIndex++) {
         const wall = parsed.walls[wallIndex];
         const available = remainingWidths[wallIndex];
-        if (wall.heightFt < item.opening.heightFt || available + 1e-9 < item.opening.lengthFt) continue;
+        if ((item.opening.wallNumber !== null && item.opening.wallNumber !== wallIndex + 1) || wall.heightFt < item.opening.heightFt || available + 1e-9 < item.opening.lengthFt) continue;
         const signature = wall.heightFt + ":" + available;
         if (tried.has(signature)) continue;
         tried.add(signature);
@@ -120,7 +120,7 @@
       options: {spacingIn, wastePercent, pricePerStud, pricePerSheet, hoursPerSqFt, hourlyRate},
       parsed: parsed,
       assumptions: [
-        "Openings are allocated to wall widths without overlap; exact positions and vertical stacking are not modeled.",
+        "Openings may be assigned to numbered walls with @N; unassigned openings are allocated by width. Exact positions and vertical stacking are not modeled.",
         "Area-only material estimate; sheathing cut placement and usable offcuts are not modeled.",
         "Two supplementary framing studs per opening are a rough allowance, not an engineered opening assembly.",
         "Headers, trimmers, cripple studs, fasteners, connectors, corners and wall intersections are not calculated.",

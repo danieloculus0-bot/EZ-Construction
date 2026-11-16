@@ -18,8 +18,7 @@
     if (typeof description !== "string") throw new Error("Enter a wall description.");
     const walls = [];
     const openings = [];
-    description.split(/\r?
-/).forEach(function (line, index) {
+    description.split(/\r?\n/).forEach(function (line, index) {
       const source = line.trim();
       if (!source || source.startsWith("#")) return;
       const match = /^(wall|opening)\s+(\d+(?:\.\d+)?)\s*(?:ft|feet|')?\s*[x×]\s*(\d+(?:\.\d+)?)\s*(?:ft|feet|')?\s*(?:@([1-9]\d*))?\s*$/i.exec(source);

@@ -55,4 +55,10 @@ opening 7 x 7 @1
 opening 7 x 7 @1`,options),/cannot be allocated/);
 assert.throws(()=>parseDescription("wall 10 x 8 @1"),/wall entries cannot/);
 
+// Equal-sized walls are not interchangeable when a later opening is pinned.
+// The 8-ft unassigned opening must go on wall 2, preserving wall 1 for @1.
+const symmetricPinned=calculate("wall 10 x 8\\nwall 10 x 8\\nopening 8 x 4\\nopening 7 x 7 @1",options);
+assert.deepEqual(symmetricPinned.openingWallNumbers,[2,1]);
+assert.equal(symmetricPinned.netAreaSqFt,79);
+
 console.log("EZ Construction estimator: all deterministic assertions passed");

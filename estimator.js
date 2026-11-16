@@ -76,14 +76,12 @@
     function allocate(position) {
       if (position === ordered.length) return true;
       const item = ordered[position];
-      const tried = new Set();
+      // Identical remaining dimensions do not make walls interchangeable:
+      // later openings can be pinned to a specific wall with @N.
       for (let wallIndex = 0; wallIndex < parsed.walls.length; wallIndex++) {
         const wall = parsed.walls[wallIndex];
         const available = remainingWidths[wallIndex];
         if ((item.opening.wallNumber !== null && item.opening.wallNumber !== wallIndex + 1) || wall.heightFt < item.opening.heightFt || available + 1e-9 < item.opening.lengthFt) continue;
-        const signature = wall.heightFt + ":" + available;
-        if (tried.has(signature)) continue;
-        tried.add(signature);
         remainingWidths[wallIndex] -= item.opening.lengthFt;
         assignment[item.index] = wallIndex + 1;
         if (allocate(position + 1)) return true;

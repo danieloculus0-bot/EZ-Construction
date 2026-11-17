@@ -93,6 +93,23 @@
       throw new Error("Openings cannot be allocated to wall widths without overlap; split or revise the layout.");
     }
 
+    const wallTakeoff = parsed.walls.map(function (wall, index) {
+      const assigned = parsed.openings.filter(function (_, openingIndex) {
+        return assignment[openingIndex] === index + 1;
+      });
+      const openingArea = assigned.reduce(function (sum, opening) {
+        return sum + opening.lengthFt * opening.heightFt;
+      }, 0);
+      const grossArea = wall.lengthFt * wall.heightFt;
+      const fullHeight = Math.ceil(wall.lengthFt * 12 / spacingIn) + 1;
+      return {
+        wallNumber: index + 1, lengthFt: wall.lengthFt, heightFt: wall.heightFt,
+        openingCount: assigned.length, grossAreaSqFt: grossArea,
+        openingAreaSqFt: openingArea, netAreaSqFt: grossArea - openingArea,
+        fullHeightPositions: fullHeight, supplementaryStuds: assigned.length * 2,
+        totalStuds: fullHeight + assigned.length * 2
+      };
+    });
     const netAreaSqFt = grossAreaSqFt - openingAreaSqFt;
     const fullHeightPositions = parsed.walls.reduce((sum, wall) => sum + Math.ceil(wall.lengthFt * 12 / spacingIn) + 1, 0);
     const supplementaryStuds = parsed.openings.length * 2;
@@ -105,6 +122,7 @@
     const laborSubtotal = laborHours * hourlyRate;
     return {
       wallCount: parsed.walls.length,
+      wallTakeoff: wallTakeoff,
       openingCount: parsed.openings.length,
       openingWallNumbers: assignment,
       grossAreaSqFt: grossAreaSqFt,

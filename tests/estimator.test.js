@@ -61,4 +61,13 @@ const symmetricPinned=calculate("wall 10 x 8\nwall 10 x 8\nopening 8 x 4\nopenin
 assert.deepEqual(symmetricPinned.openingWallNumbers,[2,1]);
 assert.equal(symmetricPinned.netAreaSqFt,79);
 
+// Per-wall quantities reconcile after pinned and backtracked allocations.
+assert.deepEqual(allocated.wallTakeoff.map(w => w.openingCount), [2, 1]);
+assert.deepEqual(allocated.wallTakeoff.map(w => w.openingAreaSqFt), [37, 42]);
+assert.equal(allocated.wallTakeoff.reduce((n,w)=>n+w.totalStuds,0), allocated.totalStuds);
+assert.equal(allocated.wallTakeoff.reduce((n,w)=>n+w.netAreaSqFt,0), allocated.netAreaSqFt);
+assert.deepEqual(pinned.wallTakeoff.map(w=>w.openingCount),[1,1]);
+assert.equal(pinned.wallTakeoff[0].openingAreaSqFt,9);
+assert.equal(pinned.wallTakeoff[1].openingAreaSqFt,28);
+
 console.log("EZ Construction estimator: all deterministic assertions passed");

@@ -74,6 +74,11 @@ opening 4 x 4</textarea>
       <div class="metric"><strong id="material"></strong><span>Material subtotal</span></div>
       <div class="metric"><strong id="labor"></strong><span>Labor subtotal</span></div>
     </div>
+    <h2 style="margin-top:22px">Wall-by-wall takeoff</h2>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;text-align:right" aria-label="Wall takeoff">
+      <thead><tr><th scope="col">Wall</th><th scope="col">Gross ft²</th><th scope="col">Openings</th><th scope="col">Net ft²</th><th scope="col">Studs</th></tr></thead>
+      <tbody id="wall-takeoff"></tbody>
+    </table></div>
     <div class="total"><span>Estimated total</span><strong id="total"></strong></div>
     <div class="warning"><b>Planning estimate only.</b> Exact cut layouts, structural framing, headers, building-code checks and verified material prices are not included. See exported assumptions.</div>
   </section>
@@ -100,6 +105,20 @@ opening 4 x 4</textarea>
         studs:numeric(result.totalStuds),sheets:numeric(result.sheets4x8),material:money(result.materialSubtotal),
         labor:money(result.laborSubtotal),total:money(result.grandTotal)};
       Object.keys(fields).forEach(id => {get(id).textContent=fields[id];});
+      const wallBody = get("wall-takeoff");
+      wallBody.replaceChildren();
+      result.wallTakeoff.forEach(wall => {
+        const tr = document.createElement("tr");
+        [wall.wallNumber, numeric(wall.grossAreaSqFt), wall.openingCount,
+          numeric(wall.netAreaSqFt), wall.totalStuds].forEach(value => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          td.style.padding = "8px";
+          td.style.borderBottom = "1px solid var(--line)";
+          tr.appendChild(td);
+        });
+        wallBody.appendChild(tr);
+      });
       get("results").hidden=false;get("message").textContent="";
       get("json-export").disabled=false;get("csv-export").disabled=false;
     } catch(error) {

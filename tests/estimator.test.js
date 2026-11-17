@@ -16,6 +16,10 @@ assert.equal(result.fullHeightPositions,26);
 assert.equal(result.supplementaryStuds,4);
 assert.equal(result.totalStuds,30);
 assert.equal(result.sheets4x8,8);
+assert.equal(result.sheets4x8Independent,9);
+assert.deepEqual(result.wallTakeoff.map(w=>w.sheets4x8Independent),[5,4]);
+assert.equal(result.independentWallPanelSubtotal,189);
+assert.ok(Math.abs(result.independentWallGrandTotal-2320.8)<1e-8);
 assert.equal(result.laborHours,30.72);
 assert.equal(result.studSubtotal,135);
 assert.equal(result.sheathingSubtotal,168);
@@ -69,5 +73,14 @@ assert.equal(allocated.wallTakeoff.reduce((n,w)=>n+w.netAreaSqFt,0), allocated.n
 assert.deepEqual(pinned.wallTakeoff.map(w=>w.openingCount),[1,1]);
 assert.equal(pinned.wallTakeoff[0].openingAreaSqFt,9);
 assert.equal(pinned.wallTakeoff[1].openingAreaSqFt,28);
+
+// Rounding each wall separately must not understate pooled area takeoff.
+const twoWalls=calculate("wall 4 x 8\\nwall 4 x 8",{...options,wastePercent:0});
+assert.equal(twoWalls.sheets4x8,2);
+assert.equal(twoWalls.sheets4x8Independent,2);
+const splitWalls=calculate("wall 2 x 8\\nwall 2 x 8",{...options,wastePercent:0});
+assert.equal(splitWalls.sheets4x8,1);
+assert.equal(splitWalls.sheets4x8Independent,2);
+assert.equal(splitWalls.wallTakeoff.reduce((n,w)=>n+w.sheets4x8Independent,0),2);
 
 console.log("EZ Construction estimator: all deterministic assertions passed");

@@ -47,6 +47,13 @@
     const pricePerSheet = positive(o.pricePerSheet, "Price per sheet", true);
     const hoursPerSqFt = positive(o.hoursPerSqFt, "Labor hours per square foot", true);
     const hourlyRate = positive(o.hourlyRate, "Labor hourly rate", true);
+    // Plate stock is purchased in whole lengths. Default zero pricing preserves
+    // older estimates while exposing an actionable quantity for procurement.
+    const plateCourses = positive(o.plateCourses === undefined ? 3 : o.plateCourses, "Plate courses");
+    const plateStockLengthFt = positive(o.plateStockLengthFt === undefined ? 8 : o.plateStockLengthFt, "Plate stock length");
+    const pricePerPlate = positive(o.pricePerPlate === undefined ? 0 : o.pricePerPlate, "Price per plate", true);
+    if (!Number.isInteger(plateCourses) || plateCourses > 8) throw new Error("Plate courses must be a whole number from 1 to 8.");
+    if (plateStockLengthFt > 32) throw new Error("Plate stock length greater than 32 feet is outside this estimator.");
     if (spacingIn > 48) throw new Error("Stud spacing greater than 48 inches is outside this estimator.");
     if (wastePercent > 100) throw new Error("Waste percentage must be 100 or less.");
 
@@ -102,12 +109,15 @@
       }, 0);
       const grossArea = wall.lengthFt * wall.heightFt;
       const fullHeight = Math.ceil(wall.lengthFt * 12 / spacingIn) + 1;
+      const plateLinearFt = wall.lengthFt * plateCourses;
+      const plateStockPerWall = Math.ceil(plateLinearFt * (1 + wastePercent / 100) / plateStockLengthFt);
       return {
         wallNumber: index + 1, lengthFt: wall.lengthFt, heightFt: wall.heightFt,
         openingCount: assigned.length, grossAreaSqFt: grossArea,
         openingAreaSqFt: openingArea, netAreaSqFt: grossArea - openingArea,
         fullHeightPositions: fullHeight, supplementaryStuds: assigned.length * 2,
         totalStuds: fullHeight + assigned.length * 2,
+        plateLinearFt: plateLinearFt, plateStockPerWall: plateStockPerWall,
         sheets4x8Independent: Math.ceil(((grossArea - openingArea) * (1 + wastePercent / 100)) / 32)
       };
     });
@@ -117,10 +127,14 @@
     const totalStuds = fullHeightPositions + supplementaryStuds;
     const sheets4x8 = Math.ceil((netAreaSqFt * (1 + wastePercent / 100)) / 32);
     const sheets4x8Independent = wallTakeoff.reduce((sum, wall) => sum + wall.sheets4x8Independent, 0);
+    const plateLinearFt = parsed.walls.reduce((sum, wall) => sum + wall.lengthFt * plateCourses, 0);
+    const plateStockPooled = Math.ceil(plateLinearFt * (1 + wastePercent / 100) / plateStockLengthFt);
+    const plateStockIndependent = wallTakeoff.reduce((sum, wall) => sum + wall.plateStockPerWall, 0);
+    const plateSubtotal = plateStockIndependent * pricePerPlate;
     const laborHours = grossAreaSqFt * hoursPerSqFt;
     const studSubtotal = totalStuds * pricePerStud;
     const sheathingSubtotal = sheets4x8 * pricePerSheet;
-    const materialSubtotal = studSubtotal + sheathingSubtotal;
+    const materialSubtotal = studSubtotal + sheathingSubtotal + plateSubtotal;
     const laborSubtotal = laborHours * hourlyRate;
     return {
       wallCount: parsed.walls.length,
@@ -133,21 +147,26 @@
       fullHeightPositions: fullHeightPositions,
       supplementaryStuds: supplementaryStuds,
       totalStuds: totalStuds,
+      plateLinearFt: plateLinearFt,
+      plateStockPooled: plateStockPooled,
+      plateStockIndependent: plateStockIndependent,
+      plateSubtotal: plateSubtotal,
       sheets4x8: sheets4x8,
       sheets4x8Independent: sheets4x8Independent,
       independentWallPanelSubtotal: sheets4x8Independent * pricePerSheet,
-      independentWallGrandTotal: studSubtotal + sheets4x8Independent * pricePerSheet + laborSubtotal,
+      independentWallGrandTotal: studSubtotal + sheets4x8Independent * pricePerSheet + plateSubtotal + laborSubtotal,
       laborHours: laborHours,
       studSubtotal: studSubtotal,
       sheathingSubtotal: sheathingSubtotal,
       materialSubtotal: materialSubtotal,
       laborSubtotal: laborSubtotal,
       grandTotal: materialSubtotal + laborSubtotal,
-      options: {spacingIn, wastePercent, pricePerStud, pricePerSheet, hoursPerSqFt, hourlyRate},
+      options: {spacingIn, wastePercent, pricePerStud, pricePerSheet, hoursPerSqFt, hourlyRate, plateCourses, plateStockLengthFt, pricePerPlate},
       parsed: parsed,
       assumptions: [
         "Openings may be assigned to numbered walls with @N; unassigned openings are allocated by width. Exact positions and vertical stacking are not modeled.",
         "Pooled panel count assumes reusable offcuts across walls; independent-wall panel count rounds each wall separately. Neither models actual sheet nesting.",
+        "Plate count uses selected horizontal courses per wall and conservative per-wall whole-stock rounding. No splice placement, cuts, corners, intersections, openings, or lumber optimization are modeled.",
         "Two supplementary framing studs per opening are a rough allowance, not an engineered opening assembly.",
         "Headers, trimmers, cripple studs, fasteners, connectors, corners and wall intersections are not calculated.",
         "Stud pricing must match the required wall height and selected lumber specification.",

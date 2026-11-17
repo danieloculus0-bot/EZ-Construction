@@ -70,17 +70,18 @@ opening 4 x 4</textarea>
       <div class="metric"><strong id="gross"></strong><span>Gross wall ft²</span></div>
       <div class="metric"><strong id="net"></strong><span>Net coverage ft²</span></div>
       <div class="metric"><strong id="studs"></strong><span>Estimated studs</span></div>
-      <div class="metric"><strong id="sheets"></strong><span>4 x 8 panels</span></div>
+      <div class="metric"><strong id="sheets"></strong><span>4 x 8 panels, pooled minimum</span></div>
+      <div class="metric"><strong id="independent-sheets"></strong><span>4 x 8 panels, per-wall allowance</span></div>
       <div class="metric"><strong id="material"></strong><span>Material subtotal</span></div>
       <div class="metric"><strong id="labor"></strong><span>Labor subtotal</span></div>
     </div>
     <h2 style="margin-top:22px">Wall-by-wall takeoff</h2>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;text-align:right" aria-label="Wall takeoff">
-      <thead><tr><th scope="col">Wall</th><th scope="col">Gross ft²</th><th scope="col">Openings</th><th scope="col">Net ft²</th><th scope="col">Studs</th></tr></thead>
+      <thead><tr><th scope="col">Wall</th><th scope="col">Gross ft²</th><th scope="col">Openings</th><th scope="col">Net ft²</th><th scope="col">Studs</th><th scope="col">Panels, per wall</th></tr></thead>
       <tbody id="wall-takeoff"></tbody>
     </table></div>
     <div class="total"><span>Estimated total</span><strong id="total"></strong></div>
-    <div class="warning"><b>Planning estimate only.</b> Exact cut layouts, structural framing, headers, building-code checks and verified material prices are not included. See exported assumptions.</div>
+    <div class="warning"><b>Planning estimate only.</b> Pooled panels assume offcut reuse between walls; per-wall panels round each wall separately. Neither is a cut layout. Structural framing, headers, building-code checks and verified prices are not included. See exported assumptions.</div>
   </section>
   <footer>Local-first · No customer data collected · For costing and planning, not structural approval.</footer>
 </main>
@@ -102,7 +103,7 @@ opening 4 x 4</textarea>
       });
       latest = { description:description,result:result };
       const fields = {gross:numeric(result.grossAreaSqFt),net:numeric(result.netAreaSqFt),
-        studs:numeric(result.totalStuds),sheets:numeric(result.sheets4x8),material:money(result.materialSubtotal),
+        studs:numeric(result.totalStuds),sheets:numeric(result.sheets4x8),"independent-sheets":numeric(result.sheets4x8Independent),material:money(result.materialSubtotal),
         labor:money(result.laborSubtotal),total:money(result.grandTotal)};
       Object.keys(fields).forEach(id => {get(id).textContent=fields[id];});
       const wallBody = get("wall-takeoff");
@@ -110,7 +111,7 @@ opening 4 x 4</textarea>
       result.wallTakeoff.forEach(wall => {
         const tr = document.createElement("tr");
         [wall.wallNumber, numeric(wall.grossAreaSqFt), wall.openingCount,
-          numeric(wall.netAreaSqFt), wall.totalStuds].forEach(value => {
+          numeric(wall.netAreaSqFt), wall.totalStuds, wall.sheets4x8Independent].forEach(value => {
           const td = document.createElement("td");
           td.textContent = value;
           td.style.padding = "8px";
@@ -143,7 +144,7 @@ opening 4 x 4</textarea>
     if (!latest)return;const r=latest.result;
     const lines=[["Metric","Value","Unit"],["Wall count",r.wallCount,"count"],["Opening count",r.openingCount,"count"],
       ["Gross wall area",r.grossAreaSqFt,"ft2"],["Opening area",r.openingAreaSqFt,"ft2"],
-      ["Net wall area",r.netAreaSqFt,"ft2"],["Studs",r.totalStuds,"count"],["4x8 panels",r.sheets4x8,"count"],
+      ["Net wall area",r.netAreaSqFt,"ft2"],["Studs",r.totalStuds,"count"],["4x8 panels pooled",r.sheets4x8,"count"],["4x8 panels per-wall",r.sheets4x8Independent,"count"],
       ["Labor hours",r.laborHours,"hours"],["Stud subtotal",r.studSubtotal,"USD"],
       ["Panel subtotal",r.sheathingSubtotal,"USD"],["Labor subtotal",r.laborSubtotal,"USD"],
       ["Estimated total",r.grandTotal,"USD"]];

@@ -75,10 +75,10 @@ assert.equal(pinned.wallTakeoff[0].openingAreaSqFt,9);
 assert.equal(pinned.wallTakeoff[1].openingAreaSqFt,28);
 
 // Rounding each wall separately must not understate pooled area takeoff.
-const twoWalls=calculate("wall 4 x 8\\nwall 4 x 8",{...options,wastePercent:0});
+const twoWalls=calculate("wall 4 x 8\nwall 4 x 8",{...options,wastePercent:0});
 assert.equal(twoWalls.sheets4x8,2);
 assert.equal(twoWalls.sheets4x8Independent,2);
-const splitWalls=calculate("wall 2 x 8\\nwall 2 x 8",{...options,wastePercent:0});
+const splitWalls=calculate("wall 2 x 8\nwall 2 x 8",{...options,wastePercent:0});
 assert.equal(splitWalls.sheets4x8,1);
 assert.equal(splitWalls.sheets4x8Independent,2);
 assert.equal(splitWalls.wallTakeoff.reduce((n,w)=>n+w.sheets4x8Independent,0),2);

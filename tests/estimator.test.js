@@ -83,4 +83,28 @@ assert.equal(splitWalls.sheets4x8,1);
 assert.equal(splitWalls.sheets4x8Independent,2);
 assert.equal(splitWalls.wallTakeoff.reduce((n,w)=>n+w.sheets4x8Independent,0),2);
 
+
+// Framing plate procurement is now an executable, priced part of the estimate.
+// 20-ft and 12-ft walls each have three horizontal plate courses.
+const pricedPlates=calculate(description,{...options,plateCourses:3,plateStockLengthFt:8,pricePerPlate:5.50});
+assert.equal(pricedPlates.plateLinearFt,96);
+assert.equal(pricedPlates.plateStockPooled,14);
+assert.deepEqual(pricedPlates.wallTakeoff.map(w=>w.plateStockPerWall),[9,5]);
+assert.equal(pricedPlates.plateStockIndependent,14);
+assert.equal(pricedPlates.plateSubtotal,77);
+assert.ok(Math.abs(pricedPlates.grandTotal-2376.8)<1e-8);
+assert.equal(pricedPlates.wallTakeoff.reduce((n,w)=>n+w.plateLinearFt,0),pricedPlates.plateLinearFt);
+// Two short independent walls must not be treated as one continuous wall.
+const shortPlates=calculate("wall 1 x 8\nwall 1 x 8",{...options,wastePercent:0,plateCourses:3,plateStockLengthFt:8,pricePerPlate:6});
+assert.equal(shortPlates.plateStockPooled,1);
+assert.equal(shortPlates.plateStockIndependent,2);
+assert.equal(shortPlates.plateSubtotal,12);
+// Legacy callers retain the old price while receiving procurement quantities.
+assert.equal(result.plateSubtotal,0);
+assert.equal(result.grandTotal,2299.8);
+for (const patch of [{plateCourses:2.5},{plateCourses:0},{plateCourses:9},
+                    {plateStockLengthFt:0},{plateStockLengthFt:33},{pricePerPlate:-1}]) {
+  assert.throws(()=>calculate(description,{...options,...patch}));
+}
+
 console.log("EZ Construction estimator: all deterministic assertions passed");

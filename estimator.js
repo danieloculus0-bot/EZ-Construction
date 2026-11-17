@@ -107,7 +107,8 @@
         openingCount: assigned.length, grossAreaSqFt: grossArea,
         openingAreaSqFt: openingArea, netAreaSqFt: grossArea - openingArea,
         fullHeightPositions: fullHeight, supplementaryStuds: assigned.length * 2,
-        totalStuds: fullHeight + assigned.length * 2
+        totalStuds: fullHeight + assigned.length * 2,
+        sheets4x8Independent: Math.ceil(((grossArea - openingArea) * (1 + wastePercent / 100)) / 32)
       };
     });
     const netAreaSqFt = grossAreaSqFt - openingAreaSqFt;
@@ -115,6 +116,7 @@
     const supplementaryStuds = parsed.openings.length * 2;
     const totalStuds = fullHeightPositions + supplementaryStuds;
     const sheets4x8 = Math.ceil((netAreaSqFt * (1 + wastePercent / 100)) / 32);
+    const sheets4x8Independent = wallTakeoff.reduce((sum, wall) => sum + wall.sheets4x8Independent, 0);
     const laborHours = grossAreaSqFt * hoursPerSqFt;
     const studSubtotal = totalStuds * pricePerStud;
     const sheathingSubtotal = sheets4x8 * pricePerSheet;
@@ -132,6 +134,9 @@
       supplementaryStuds: supplementaryStuds,
       totalStuds: totalStuds,
       sheets4x8: sheets4x8,
+      sheets4x8Independent: sheets4x8Independent,
+      independentWallPanelSubtotal: sheets4x8Independent * pricePerSheet,
+      independentWallGrandTotal: studSubtotal + sheets4x8Independent * pricePerSheet + laborSubtotal,
       laborHours: laborHours,
       studSubtotal: studSubtotal,
       sheathingSubtotal: sheathingSubtotal,
@@ -142,7 +147,7 @@
       parsed: parsed,
       assumptions: [
         "Openings may be assigned to numbered walls with @N; unassigned openings are allocated by width. Exact positions and vertical stacking are not modeled.",
-        "Area-only material estimate; sheathing cut placement and usable offcuts are not modeled.",
+        "Pooled panel count assumes reusable offcuts across walls; independent-wall panel count rounds each wall separately. Neither models actual sheet nesting.",
         "Two supplementary framing studs per opening are a rough allowance, not an engineered opening assembly.",
         "Headers, trimmers, cripple studs, fasteners, connectors, corners and wall intersections are not calculated.",
         "Stud pricing must match the required wall height and selected lumber specification.",

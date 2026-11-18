@@ -13,3 +13,5 @@ jobs:
           node-version: '22'
       - name: Run deterministic offline estimator tests
         run: node tests/estimator.test.js
+      - name: Run estimate revision comparison CLI acceptance
+        run: node tests/compare-estimates.test.js

@@ -15,3 +15,5 @@ jobs:
         run: node tests/estimator.test.js
       - name: Run estimate revision comparison CLI acceptance
         run: node tests/compare-estimates.test.js
+      - name: Run estimate cost sensitivity CLI acceptance
+        run: node tests/estimate-sensitivity.test.js

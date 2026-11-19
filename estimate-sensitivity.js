@@ -38,7 +38,7 @@ function main(args) {
   if (args.length !== 3) throw new Error('Usage: node estimate-sensitivity.js estimate.json material-change-percent labor-change-percent');
   const snap = JSON.parse(fs.readFileSync(args[0], 'utf8'));
   const parse = (s, name) => {
-    if (!/^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(s)) throw new Error('Invalid ' + name + ' percentage');
+    if (!/^[+-]?(?:[0-9]+(?:[.][0-9]*)?|[.][0-9]+)$/.test(s)) throw new Error('Invalid ' + name + ' percentage');
     return Number(s);
   };
   const report = sensitivity(snap, {materialPercent: parse(args[1], 'material'), laborPercent: parse(args[2], 'labor')});

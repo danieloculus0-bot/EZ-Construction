@@ -17,3 +17,5 @@ jobs:
         run: node tests/compare-estimates.test.js
       - name: Run estimate cost sensitivity CLI acceptance
         run: node tests/estimate-sensitivity.test.js
+      - name: Run procurement bill CLI acceptance
+        run: node tests/procurement.test.js

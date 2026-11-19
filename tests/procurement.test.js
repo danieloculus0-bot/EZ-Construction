@@ -1,0 +1,35 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const os=require('node:os');
+const path=require('node:path');
+const {spawnSync}=require('node:child_process');
+const {calculate}=require('../estimator.js');
+const {procurement}=require('../procurement.js');
+const description='wall 20 x 8\nwall 12 x 8\nopening 3 x 7\nopening 4 x 4';
+const options={spacingIn:16,wastePercent:10,pricePerStud:4.5,pricePerSheet:21,hoursPerSqFt:0.12,hourlyRate:65,pricePerPlate:8};
+const result=calculate(description,options);
+const snapshot={format:'ez-construction-estimate.v1',description,result};
+const conservative=procurement(snapshot);
+const pooled=procurement(snapshot,'pooled');
+assert.equal(conservative.items[0].quantity,30);
+assert.equal(conservative.items[1].quantity,9);
+assert.equal(conservative.items[2].quantity,result.plateStockIndependent);
+assert.equal(pooled.items[1].quantity,8);
+assert.equal(pooled.items[2].quantity,result.plateStockPooled);
+assert.ok(conservative.materialCost>=pooled.materialCost);
+assert.equal(conservative.estimateTotal,Math.round((conservative.materialCost+result.laborSubtotal)*100)/100);
+assert.throws(()=>procurement({...snapshot,result:{...result,totalStuds:31}}),/does not reconcile/);
+assert.throws(()=>procurement({...snapshot,result:{...result,options:{...options,pricePerStud:-1}}}),/zero or greater/);
+assert.throws(()=>procurement(snapshot,'invented'),/valid options and mode/);
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'ez-construction-procurement-'));
+try {
+ const file=path.join(dir,'estimate.json');
+ fs.writeFileSync(file,JSON.stringify(snapshot));
+ const run=spawnSync(process.execPath,[path.join(__dirname,'..','procurement.js'),file,'independent'],{encoding:'utf8'});
+ assert.equal(run.status,0,run.stderr);
+ assert.deepEqual(JSON.parse(run.stdout),conservative);
+ const invalid=spawnSync(process.execPath,[path.join(__dirname,'..','procurement.js'),file,'bad'],{encoding:'utf8'});
+ assert.notEqual(invalid.status,0);
+} finally {fs.rmSync(dir,{recursive:true,force:true});}
+console.log('Procurement acceptance tests passed');
